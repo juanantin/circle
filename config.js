@@ -1,46 +1,72 @@
 /* ==========================================================================
-   STONKEX STRATEGY — site configuration
+   INNER CIRCLE — site configuration
    --------------------------------------------------------------------------
    This is the only file you need to edit.
+
+   ▸ TO GO LIVE, fill in three things:
+       contractAddress   the $INNER token on Base
+       rewardTokenAddress the $CRCL reward token
+       links.x           the project's X profile
+     Until `contractAddress` is set, the CA button reads "SOON" and the chart
+     link is disabled rather than pointing at nothing.
    ========================================================================== */
 
-window.STONKEX_CONFIG = {
+window.INNER_CONFIG = {
   /* Build stamp. Shown in the ?debug=1 panel, so you can confirm which version
      a browser actually has rather than guessing at a cache. Bump it together
-     with the ?v= on the script tags in index.html whenever you deploy. */
-  version: '2026-08-29.14',
+     with the ?v= on the script tags in index.html whenever you deploy —
+     `node scripts/stamp.mjs` does both. */
+  version: '2026-09-03.1',
 
   /* ---- Token ---------------------------------------------------------- */
 
-  // $STONKEXSTR on Base — the token people buy, and the one the CA button copies.
-  contractAddress: '0x80081d759E5e0154fB15D5ee8De5085D89E3dCcC',
+  // $INNER on Base — the token people buy, and the one the CA button copies.
+  // Leave empty until the launch address is known.
+  contractAddress: '',
 
-  // $STONKEX, the reward token — confirmed as the `quote` side of this token's
-  // pair in the /api/coins listing, where the same address is "The Stonks
-  // Exchange" (STONKEX). Used to price "total distributed" in USD when the
-  // rewards source doesn't already give a USD figure.
-  rewardTokenAddress: '0x5ab000ff9B9FfE0349CE5ffA5fD86f217C3680F5',
+  // $CRCL — the reward token holders receive. Used to price "total
+  // distributed" in USD when the rewards source doesn't already give one.
+  rewardTokenAddress: '',
 
   chain: 'base',    // DexScreener chain slug
   chainId: 8453,    // EVM chain id
 
-  /* Related contracts, from thestonks.exchange's own APIs. Recorded here for
-     reference — nothing reads them yet.
-       pool         the STONKEXSTR/STONKEX pool           (/api/coins)
-       feeLocker    where trading fees accrue             (/api/coins)
-       rewardsIndex the "rewards" routing target for this
-                    token, i.e. the distributor           (/api/fee-routing) */
+  /* Copy shown in the fact strip under the hero. */
+  token: {
+    symbol: 'INNER',        // rendered as $INNER everywhere the page names it
+    totalSupply: 1000000000,
+    chainLabel: 'Base',
+  },
+
+  rewardToken: {
+    symbol: 'CRCL',
+    label: '$CRCL stocks',  // how the rewards are described in the fact strip
+  },
+
+  /* Liquidity lock. true prints a "Locked" badge on the liquidity tile,
+     false prints nothing, null (the default) hides the badge entirely —
+     so the site never claims a lock that hasn't been made. */
+  liquidityLocked: null,
+
+  /* Related contracts. Fill these in from the launch platform's APIs once
+     they exist — `pool` in particular makes the DexScreener lookup exact
+     rather than a token search.
+       pool         the $INNER pool
+       rewardPool   the $CRCL pool, used to price rewards in USD
+       feeLocker    where trading fees accrue
+       rewardsIndex the rewards distributor */
   contracts: {
-    pool: '0x550b95fcb0e309c552FAe9670b1A514D443CA463',
-    rewardPool: '0x7692AcC1CDd771D09EbCae3663e1843b2911BEC7',  // STONKEX/WETH
-    feeLocker: '0x71D1D363176723f85d98B8B430DF33cde89f0A7f',
-    rewardsIndex: '0xf01a4dabfd54d1A6a1812a95F7151e8DA851DE2E',
+    pool: '',
+    rewardPool: '',
+    feeLocker: '',
+    rewardsIndex: '',
   },
 
   /* ---- Links ---------------------------------------------------------- */
 
   links: {
-    x: 'https://x.com/StonkexStrategy',
+    // Leave empty and the X button renders disabled rather than dead.
+    x: '',
 
     // Leave null to auto-build a DexScreener link from the contract address.
     chart: null,
@@ -58,23 +84,22 @@ window.STONKEX_CONFIG = {
 
   sources: {
 
-    /* Market cap, liquidity, 24h volume, and the token price.
-       Public API, no key, CORS-enabled. */
+    /* Market cap, liquidity, 24h volume, the 24h price move, and the token
+       price. Public API, no key, CORS-enabled. */
     dexscreener: {
       enabled: true,
     },
 
     /* Holder count. DexScreener does not report holders, and no single explorer
-       is reliable for a token this new — Blockscout was answering 0 for
-       $STONKEXSTR, which just means it hasn't indexed the holders yet.
+       is reliable for a freshly launched token — an explorer that hasn't
+       indexed yet answers 0, which is not the same as "no holders".
 
        So the providers below are tried IN ORDER and the first one to return a
        count above zero wins. A zero is treated as "no answer" and falls through
        to the next provider: a launched token with liquidity cannot have none.
        Run the page with ?debug=1 to see which provider answered.
 
-         blockscout     — base.blockscout.com. Free, no key. Was returning 0,
-                          then errors, for this token — it has not indexed it.
+         blockscout     — base.blockscout.com. Free, no key.
          geckoterminal  — free, no key. Only has a count for tokens it indexes.
          etherscan      — Etherscan V2 multichain. Needs `etherscanApiKey`, and
                           its tokenholdercount action requires a PAID plan.
@@ -84,9 +109,9 @@ window.STONKEX_CONFIG = {
        and the rest only engage once you fill a key in.
 
        ▸ The reliable answer is the indexer in worker/: it counts holders from
-         $STONKEXSTR transfer history, so it needs no explorer at all. Once it
-         is deployed and synced it supplies `holders` through sources.rewards
-         and this whole chain becomes a fallback.
+         transfer history, so it needs no explorer at all. Once it is deployed
+         and synced it supplies `holders` through sources.rewards and this whole
+         chain becomes a fallback.
 
        Set `enabled: false` to stop fetching holders here entirely. */
     holders: {
@@ -99,26 +124,12 @@ window.STONKEX_CONFIG = {
       moralisApiKey: '',
     },
 
-    /* Rewards figures — total fees collected and total $STONKEX distributed.
+    /* Rewards figures — total fees collected and total $CRCL distributed.
        These are project numbers, so they come from the project's own API.
 
        ▸ SET `url` TO THE JSON ENDPOINT that carries the reward totals.
          Pass one URL or an array of them; each is read through `fields` below
          and the first source to yield a number for a metric wins.
-
-       These thestonks.exchange endpoints have been checked and do NOT carry the
-       totals — don't bother pointing at them again:
-         /api/kols/airdrops?token=<ca>   KOL airdrops; empty for this token
-         /api/fee-routing?pairs=<ca>:<feeLocker>
-                                         routing config only — it is what told
-                                         us fees route to "rewards" via the
-                                         index contract recorded above
-         /api/coins                      token metadata + supply, no totals
-
-       The token page also issues Alchemy JSON-RPC calls, so the figures it
-       renders are likely read straight off the rewards-index contract rather
-       than served by an API. If so, they need either an endpoint that exposes
-       them or an indexer — a browser cannot sum transfer logs over Base history.
 
        `fields` maps our metric names onto the response. Values are dot-paths,
        so 'data.stats.totalFeesUsd' and 'rewards.0.amount' both work. Several
@@ -126,16 +137,14 @@ window.STONKEX_CONFIG = {
        number wins, so you can usually just add yours to the front of the list.
 
        The endpoint must send permissive CORS headers, since the browser calls
-       it directly. If it doesn't, proxy it from your own domain.              */
+       it directly. If it doesn't, proxy it from your own domain.
+
+       worker/ is a Cloudflare Worker that indexes these totals from Base and
+       serves exactly this shape. Once deployed:
+         url: ['https://inner-rewards.<you>.workers.dev', 'data/rewards.json'],
+       and data/rewards.json stays as the fallback if it is ever down.        */
     rewards: {
       enabled: true,
-      // A string, or an array of them — the first source with a number for a
-      // metric wins, so put live endpoints in front of the committed file.
-      //
-      // worker/ is a Cloudflare Worker that indexes these totals from Base and
-      // serves exactly this shape. Once deployed:
-      //   url: ['https://stonkex-rewards.<you>.workers.dev', 'data/rewards.json'],
-      // and data/rewards.json stays as the fallback if it is ever down.
       url: 'data/rewards.json',
 
       fields: {
@@ -144,6 +153,11 @@ window.STONKEX_CONFIG = {
           'data.totalFeesCollected', 'stats.totalFeesCollected',
         ],
         totalFeesTokens: ['totalFeesTokens', 'feesTokens', 'data.totalFeesTokens'],
+        // Fees taken in the last 24h, in USD — the "24H" line on the fees tile.
+        totalFees24hUsd: [
+          'totalFees24hUsd', 'fees24hUsd', 'feesCollected24hUsd', 'fees.usd24h',
+          'data.totalFees24hUsd', 'stats.totalFees24hUsd',
+        ],
         totalDistributed: [
           'totalDistributed', 'totalRewardsDistributed', 'rewardsDistributed',
           'data.totalDistributed', 'stats.totalDistributed',
@@ -154,6 +168,11 @@ window.STONKEX_CONFIG = {
         ],
         holders: [
           'holders', 'holderCount', 'totalHolders', 'data.holders', 'stats.holders',
+        ],
+        // Net new holders over the last 24h — the "24H" line on the holders tile.
+        holders24h: [
+          'holders24h', 'holdersChange24h', 'newHolders24h',
+          'data.holders24h', 'stats.holders24h',
         ],
         marketCap: ['marketCap', 'marketCapUsd', 'data.marketCap'],
         liquidity: ['liquidity', 'liquidityUsd', 'data.liquidity'],
@@ -172,9 +191,11 @@ window.STONKEX_CONFIG = {
   stats: {
     totalFeesCollected: null,
     totalFeesTokens: null,
+    totalFees24hUsd: null,
     totalDistributed: null,
     totalDistributedUsd: null,
     holders: null,
+    holders24h: null,
     marketCap: null,
     liquidity: null,
     volume24h: null,

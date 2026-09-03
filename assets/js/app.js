@@ -1,6 +1,6 @@
 /* ==========================================================================
-   STONKEX STRATEGY — app
-   Contract-address copy, live dashboard.
+   INNER CIRCLE — app
+   Brand copy, contract-address copy, live dashboard.
 
    Data flow: each source in CONFIG.sources returns the fields it knows about;
    they are merged in order, so a later source overrides an earlier one. Add
@@ -10,16 +10,22 @@
 (function () {
   'use strict';
 
-  var CFG = window.STONKEX_CONFIG || {};
+  var CFG = window.INNER_CONFIG || {};
   var LINKS = CFG.links || {};
   var SRC = CFG.sources || {};
+  var TOKEN = CFG.token || {};
+  var REWARD = CFG.rewardToken || {};
   var DEBUG = /[?&]debug=1\b/.test(location.search);
 
-  var METRICS = ['fees', 'feesTokens', 'distributed', 'distributedUsd', 'holders',
-                 'marketCap', 'liquidity', 'volume24h'];
+  var METRICS = ['fees', 'feesTokens', 'feesUsd24h', 'distributed', 'distributedUsd',
+                 'holders', 'holders24h', 'marketCap', 'marketCapChange24h',
+                 'liquidity', 'volume24h', 'volumeChange24h'];
+
+  // Metrics rendered as a signed 24h move, and coloured up/down.
+  var SIGNED = { holders24h: 1, marketCapChange24h: 1, volumeChange24h: 1 };
 
   function log() {
-    if (DEBUG && window.console) console.log.apply(console, ['[stonkex]'].concat([].slice.call(arguments)));
+    if (DEBUG && window.console) console.log.apply(console, ['[inner]'].concat([].slice.call(arguments)));
   }
 
   /* ---------------------------------------------------------------------
@@ -28,20 +34,29 @@
 
   // Whole numbers throughout — cents on a market cap are noise.
   var nf0 = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+  var nf2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   function usd(n) { return '$' + nf0.format(Math.round(n)); }
-  function amount(n) { return nf0.format(Math.round(n)); }
+  function usdApprox(n) { return '≈ $' + nf0.format(Math.round(n)); }
+  function amount(n) { return nf2.format(n); }
   function count(n) { return nf0.format(Math.round(n)); }
+  function sign(n) { return n > 0 ? '+' : (n < 0 ? '−' : ''); }
+  function signedCount(n) { return sign(n) + nf0.format(Math.abs(Math.round(n))); }
+  function signedPct(n) { return sign(n) + nf2.format(Math.abs(n)) + '%'; }
 
   var FORMATTERS = {
     fees: usd,
     feesTokens: amount,
+    feesUsd24h: usd,
     distributed: amount,
-    distributedUsd: amount,
+    distributedUsd: usdApprox,
     holders: count,
+    holders24h: signedCount,
     marketCap: usd,
+    marketCapChange24h: signedPct,
     liquidity: usd,
     volume24h: usd,
+    volumeChange24h: signedPct,
   };
 
   /* ---------------------------------------------------------------------
@@ -85,31 +100,89 @@
     });
   }
 
+  function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+
+  /* ---------------------------------------------------------------------
+     Brand copy — symbols and the fact strip, all driven from config so the
+     page never disagrees with itself.
+     --------------------------------------------------------------------- */
+
+  var SYMBOL = '$' + String(TOKEN.symbol || 'INNER').replace(/^\$/, '');
+  var REWARD_SYMBOL = '$' + String(REWARD.symbol || 'CRCL').replace(/^\$/, '');
+
+  each('[data-sym]', function (n) { n.textContent = SYMBOL; });
+  each('[data-rsym]', function (n) { n.textContent = REWARD_SYMBOL; });
+
+  var supplyEl = document.getElementById('fact-supply');
+  if (supplyEl) {
+    var supply = num(TOKEN.totalSupply);
+    supplyEl.innerHTML = '';
+    supplyEl.appendChild(document.createTextNode(supply === null ? '—' : nf0.format(supply) + ' '));
+    var symEl = document.createElement('b');
+    symEl.textContent = SYMBOL;
+    supplyEl.appendChild(symEl);
+  }
+
+  var chainEl = document.getElementById('fact-chain');
+  if (chainEl) chainEl.textContent = TOKEN.chainLabel || CFG.chain || 'Base';
+
+  var rewardsEl = document.getElementById('fact-rewards');
+  if (rewardsEl) {
+    // "$CRCL stocks" — the symbol stays emphasised, the noun does not.
+    var label = String(REWARD.label || (REWARD_SYMBOL + ' stocks'));
+    var rest = label.replace(REWARD_SYMBOL, '').trim();
+    rewardsEl.innerHTML = '';
+    var rSym = document.createElement('b');
+    rSym.textContent = REWARD_SYMBOL;
+    rewardsEl.appendChild(rSym);
+    if (rest) rewardsEl.appendChild(document.createTextNode(' ' + rest));
+  }
+
+  // "Locked" only when the config actually says so — never by assumption.
+  var lockEl = document.getElementById('liq-lock');
+  if (lockEl) lockEl.hidden = CFG.liquidityLocked !== true;
+
   /* ---------------------------------------------------------------------
      Contract address + links
      --------------------------------------------------------------------- */
 
   var address = String(CFG.contractAddress || '').trim();
 
-  function shorten(addr) {
-    if (!addr) return '—';
-    return addr.length <= 12 ? addr : addr.slice(0, 4) + '…' + addr.slice(-4);
-  }
+  var copyBtn = document.getElementById('copy-ca');
+  var caHint = document.getElementById('ca-hint');
 
-  var caShort = document.getElementById('ca-short');
-  if (caShort) caShort.textContent = shorten(address);
+  // The button stays a plain "CA"; the address itself rides along as its
+  // tooltip, so a truncated form can never be mistaken for the real thing.
+  if (copyBtn) {
+    if (address) copyBtn.title = address; else copyBtn.classList.add('is-idle');
+  }
+  if (caHint) caHint.textContent = address ? 'Copy CA' : 'Soon';
 
   var chartLink = document.getElementById('link-chart');
   if (chartLink) {
-    chartLink.href = LINKS.chart ||
-      ('https://dexscreener.com/' + (CFG.chain || 'base') + '/' + encodeURIComponent(address));
+    var chart = LINKS.chart ||
+      (address ? 'https://dexscreener.com/' + (CFG.chain || 'base') + '/' + encodeURIComponent(address) : '');
+    if (chart) {
+      chartLink.href = chart;
+    } else {
+      disable(chartLink);
+    }
   }
 
   var xLink = document.getElementById('link-x');
-  if (xLink && LINKS.x) xLink.href = LINKS.x;
+  if (xLink) {
+    if (LINKS.x) xLink.href = LINKS.x; else disable(xLink);
+  }
+
+  /* A link with nowhere to go is worse than one that says "not yet". */
+  function disable(a) {
+    a.classList.add('is-idle');
+    a.removeAttribute('href');
+    a.removeAttribute('target');
+    a.setAttribute('aria-disabled', 'true');
+  }
 
   /* Copy-to-clipboard, with a fallback for non-secure contexts. */
-  var copyBtn = document.getElementById('copy-ca');
   var toast = document.getElementById('copy-toast');
   var toastText = document.getElementById('toast-text');
   var toastTimer = null;
@@ -138,15 +211,15 @@
 
   if (copyBtn) {
     copyBtn.addEventListener('click', function () {
-      if (!address) { flashToast('NO ADDRESS SET', true); return; }
+      if (!address) { flashToast('Address coming soon', true); return; }
 
       function fallback() {
         var ok = legacyCopy(address);
-        flashToast(ok ? 'COPIED!' : 'COPY FAILED', !ok);
+        flashToast(ok ? 'Copied' : 'Copy failed', !ok);
       }
 
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(address).then(function () { flashToast('COPIED!'); }, fallback);
+        navigator.clipboard.writeText(address).then(function () { flashToast('Copied'); }, fallback);
       } else {
         fallback();
       }
@@ -215,7 +288,7 @@
     });
   }
 
-  /* Market cap, liquidity, 24h volume. */
+  /* Market cap, liquidity, 24h volume, 24h move. */
   function sourceDexScreener() {
     var pool = (SRC.dexscreener || {}).pairAddress || (CFG.contracts || {}).pool;
     return dexPair(address, pool).then(function (pair) {
@@ -226,6 +299,10 @@
       if (mc !== null) out.marketCap = mc;
       if (pair.liquidity && num(pair.liquidity.usd) !== null) out.liquidity = num(pair.liquidity.usd);
       if (pair.volume && num(pair.volume.h24) !== null) out.volume24h = num(pair.volume.h24);
+      // Supply is fixed, so the 24h price move IS the 24h market-cap move.
+      if (pair.priceChange && num(pair.priceChange.h24) !== null) {
+        out.marketCapChange24h = num(pair.priceChange.h24);
+      }
       return out;
     });
   }
@@ -313,7 +390,7 @@
     });
   }
 
-  /* Project rewards API — fees collected, $STONKEX distributed.
+  /* Project rewards API — fees collected, reward tokens distributed.
      Takes one URL or several; each is read through the same field map and the
      first to yield a number for a metric wins. */
   function sourceRewards() {
@@ -337,24 +414,26 @@
     });
   }
 
+  var REWARD_FIELD_MAP = {
+    totalFeesCollected: 'fees',
+    totalFeesTokens: 'feesTokens',
+    totalFees24hUsd: 'feesUsd24h',
+    totalDistributed: 'distributed',
+    totalDistributedUsd: 'distributedUsd',
+    holders: 'holders',
+    holders24h: 'holders24h',
+    marketCap: 'marketCap',
+    liquidity: 'liquidity',
+    volume24h: 'volume24h',
+  };
+
   function readRewards(cfg, d) {
     var fields = cfg.fields || {};
     var out = {};
 
-    var map = {
-      totalFeesCollected: 'fees',
-      totalFeesTokens: 'feesTokens',
-      totalDistributed: 'distributed',
-      totalDistributedUsd: 'distributedUsd',
-      holders: 'holders',
-      marketCap: 'marketCap',
-      liquidity: 'liquidity',
-      volume24h: 'volume24h',
-    };
-
-    Object.keys(map).forEach(function (from) {
+    Object.keys(REWARD_FIELD_MAP).forEach(function (from) {
       var n = firstNumber(d, fields[from]);
-      if (n !== null) out[map[from]] = n;
+      if (n !== null) out[REWARD_FIELD_MAP[from]] = n;
     });
 
     if (out.distributedUsd === undefined) {
@@ -377,9 +456,7 @@
      --------------------------------------------------------------------- */
 
   var valueNodes = {};
-  Array.prototype.forEach.call(document.querySelectorAll('[data-value]'), function (node) {
-    valueNodes[node.dataset.value] = node;
-  });
+  each('[data-value]', function (node) { valueNodes[node.dataset.value] = node; });
 
   var shown = {};
   var timers = {};
@@ -390,11 +467,17 @@
     if (!node) return;
 
     if (typeof target !== 'number' || !isFinite(target)) {
-      node.textContent = '—';                       // no source for this one yet
+      node.textContent = SIGNED[key] ? '' : '—';    // no source for this one yet
       node.classList.add('is-empty');
+      node.classList.remove('is-up', 'is-down');
       return;
     }
     node.classList.remove('is-empty');
+
+    if (SIGNED[key]) {
+      node.classList.toggle('is-up', target > 0);
+      node.classList.toggle('is-down', target < 0);
+    }
 
     var fmt = FORMATTERS[key] || amount;
     var from = typeof shown[key] === 'number' ? shown[key] : 0;
@@ -439,9 +522,12 @@
     var s = CFG.stats || {};
     return {
       fees: num(s.totalFeesCollected),
+      feesTokens: num(s.totalFeesTokens),
+      feesUsd24h: num(s.totalFees24hUsd),
       distributed: num(s.totalDistributed),
       distributedUsd: num(s.totalDistributedUsd),
       holders: num(s.holders),
+      holders24h: num(s.holders24h),
       marketCap: num(s.marketCap),
       liquidity: num(s.liquidity),
       volume24h: num(s.volume24h),
@@ -458,18 +544,18 @@
     if (!box) {
       box = document.createElement('pre');
       box.id = 'dash-debug';
-      box.style.cssText = 'margin:14px auto 0;max-width:640px;padding:12px 14px;border:1px solid #e6ebf3;' +
-        'border-radius:12px;background:#fbfcfe;color:#3d4655;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;' +
+      box.style.cssText = 'margin:14px auto 0;max-width:640px;padding:12px 14px;border:1px solid rgba(150,122,255,.22);' +
+        'border-radius:12px;background:rgba(14,13,20,.8);color:#b9b2ca;font:12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;' +
         'text-align:left;white-space:pre-wrap;word-break:break-word;';
       note.parentNode.insertBefore(box, note.nextSibling);
     }
     var head = 'build ' + (CFG.version || 'unknown') +
       '  ·  ' + new Date().toLocaleTimeString() + '\n\n';
 
-    box.textContent = head + sourceLog.map(function (s) {
+    box.textContent = head + (sourceLog.map(function (s) {
       return (s.ok ? (s.empty ? '· empty  ' : '✓ ok     ') : '✗ failed ') +
         s.name + (s.ok ? '' : '  — ' + s.error);
-    }).join('\n') || 'no sources ran';
+    }).join('\n') || 'no sources ran');
   }
 
   function load() {
@@ -495,7 +581,7 @@
         if (got) live++;
       });
 
-      // Derive the USD value of distributed $STONKEX if nothing supplied one.
+      // Derive the USD value of the distributed rewards if nothing supplied one.
       if (stats.distributedUsd === null && rewardPrice !== null && typeof stats.distributed === 'number') {
         stats.distributedUsd = stats.distributed * rewardPrice;
       }
@@ -504,9 +590,10 @@
       paint(stats);
 
       // Only worth saying something when the data ISN'T live — a timestamp on
-      // a working dashboard is noise.
+      // a working dashboard is noise. Before launch, say why it is quiet.
       if (note) {
-        note.textContent = live ? '' : 'Live data unavailable — retrying.';
+        note.textContent = live ? '' :
+          (address ? 'Live data unavailable — retrying.' : 'The circle has not opened yet — figures go live at launch.');
         note.hidden = !!live;
       }
       renderDebug();

@@ -1,8 +1,8 @@
 # Starting a new token site from this template
 
-A single-page token site with a live dashboard, copied from the STONKEX
-Strategy build with every indexed figure cleared. Work top to bottom; the last
-section is the one people skip and regret.
+A single-page token site with a live dashboard — the Inner Circle build with
+every indexed figure cleared. Work top to bottom; the last section is the one
+people skip and regret.
 
 Don't commit token work back into this repo — copy it into the new token's
 repo first, so this one stays a clean starting point.
@@ -22,7 +22,9 @@ repo first, so this one stays a clean starting point.
 | `links.x` | the token's X account — its own, not the platform's |
 
 **`worker/src/config.js`** — the same addresses again in `TOKENS` and
-`CONTRACTS`, plus:
+`CONTRACTS`. ⚠ These are still the **previous** token's, and both the Worker
+and the GitHub Action read them, so nothing may index until they are swapped.
+Also here:
 
 - **`START_BLOCK`** — the block the token was deployed in. Leave it stale and
   the backfill either grinds through a huge empty range or misses history
@@ -34,23 +36,26 @@ repo first, so this one stays a clean starting point.
 
 ## 2. Branding
 
-- `images/` — the header clip and its poster frame, and the source icon.
-  Regenerate `favicon.ico`, `images/favicon.png` and
-  `images/apple-touch-icon.png` from the icon; apple-touch-icon must be
-  flattened onto white, because iOS renders transparency as black.
-- `index.html` — `<title>`, the description, the OG and Twitter meta
-  (`twitter:site` is a handle and is easy to leave stale — it decides who a
-  shared card credits), the dashboard headline and sub-line, and the tile
-  labels that name the reward token.
-- `assets/css/styles.css` — only if the palette changes.
-- The two ecosystem lockups at the bottom stay if the token launched on the
+- `config.js` — `token` (symbol, total supply, chain label) and `rewardToken`
+  (symbol, label) drive every symbol printed on the page and the whole fact
+  strip, so the markup never disagrees with the config.
+- `images/` — the header clip, its poster frame, and the source icon.
+  Regenerate `favicon.ico`, `images/favicon.png`, `images/apple-touch-icon.png`,
+  `images/icon-192.png`, `images/icon-512.png` and `images/logo.png` from the
+  icon.
+- `index.html` — `<title>`, the description, the OG meta and `twitter:site`
+  (a handle, easy to leave stale — it decides who a shared card credits), the
+  hero lockup and its two lines of copy.
+- `assets/css/styles.css` — the palette lives in `:root`, and the display face
+  is set once in the `Cinzel` font stacks.
+- The two ecosystem blocks at the bottom stay if the token launched on the
   same platform. Otherwise replace or remove that whole section.
 
 ## 3. Turn the indexer back on
 
 `.github/workflows/index-rewards.yml` ships with its schedule **commented
-out**, so a fresh copy doesn't index the wrong token. Once §1 is done,
-uncomment the two `schedule` lines. Then:
+out**, so it cannot index the wrong token. Once §1 is done — including
+`worker/src/config.js` — uncomment the two `schedule` lines. Then:
 
 - Add an `RPC_URL` secret (Settings ▸ Secrets ▸ Actions) if you have a private
   Base RPC. Without it the job falls back to the public `mainnet.base.org`,
