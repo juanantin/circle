@@ -16,7 +16,7 @@ window.INNER_CONFIG = {
      a browser actually has rather than guessing at a cache. Bump it together
      with the ?v= on the script tags in index.html whenever you deploy —
      `node scripts/stamp.mjs` does both. */
-  version: '2026-09-03.1',
+  version: '2026-09-03.2',
 
   /* ---- Token ---------------------------------------------------------- */
 

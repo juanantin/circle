@@ -32,7 +32,7 @@ contract address on its own.
 - **Top bar** — the mark and wordmark on the left; X, chart, and a
   contract-address button that copies the CA and flashes a confirmation.
 - **Hero** — the carved `INNER CIRCLE` lockup over the looping ritual clip
-  (`images/inner_web_vid.mp4`), its edges feathered into the stone so it reads
+  (`images/inner_header.mp4`), its edges feathered into the stone so it reads
   as part of the page rather than a video in a box. Viewers with
   `prefers-reduced-motion: reduce` get `images/inner_hero_poster.webp` as a
   still and the video never downloads.
@@ -247,7 +247,7 @@ the page falls back to `execCommand` elsewhere.)
   (the Open Graph share image) are also derived from that icon: the sigil sharp
   over a blurred, darkened copy of itself. Re-cut them from a frame of the clip
   if you'd rather the poster match the video exactly.
-- `images/inner_web_vid.mp4` is **656×448**, so it is upscaled on a desktop
+- `images/inner_header.mp4` is **672×448** (3:2), so it is upscaled on a desktop
   retina screen. Re-export larger and drop it in if you want it crisper — the
   layout reads its aspect ratio from CSS, not from the file.
 - The ecosystem marks are drawn as inline SVG rather than shipped as images, so

@@ -361,7 +361,7 @@ a { color: inherit; text-decoration: none; }
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 41 / 28;
+  aspect-ratio: 3 / 2;
   object-fit: cover;
   background: transparent;
   /* Feather every edge instead of cropping to an ellipse — whatever the clip
