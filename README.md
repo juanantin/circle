@@ -13,19 +13,21 @@ assets/js/app.js
 images/               branding
 ```
 
-## Before it can go live
+## Still to fill in
 
-`config.js` ships with three fields deliberately empty, because the site should
-say "soon" rather than link to nothing:
+`contractAddress` and `links.x` are set, so the CA button copies and the X and
+chart links resolve (the chart link builds itself from the contract address).
+What remains in `config.js`:
 
 | field | effect while empty |
 |---|---|
-| `contractAddress` | the CA button reads `SOON` and copying flashes a notice |
-| `links.x` | the X button renders disabled |
 | `rewardTokenAddress` | `$CRCL distributed` cannot be priced in USD |
+| `contracts.pool` | DexScreener falls back to a token search, which can come back empty for an unusual quote pair |
+| `contracts.rewardPool` | no price for the reward token |
+| `contracts.rewardsIndex`, `feeLocker` | the indexer in `worker/` has nothing to scan |
 
-Fill them in and everything wires itself up — the chart link builds from the
-contract address on its own.
+Every link on the page comes from `links` in `config.js` — including the two
+ecosystem blocks — so no URL is ever pasted into the markup.
 
 ## What's on the page
 

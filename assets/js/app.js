@@ -174,6 +174,13 @@
     if (LINKS.x) xLink.href = LINKS.x; else disable(xLink);
   }
 
+  // The ecosystem blocks too, so config.js stays the only place a URL lives.
+  [['link-launched', LINKS.launchedIn], ['link-rewards', LINKS.rewardsBy]]
+    .forEach(function (pair) {
+      var el = document.getElementById(pair[0]);
+      if (el && pair[1]) el.href = pair[1];
+    });
+
   /* A link with nowhere to go is worse than one that says "not yet". */
   function disable(a) {
     a.classList.add('is-idle');

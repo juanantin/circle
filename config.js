@@ -16,13 +16,12 @@ window.INNER_CONFIG = {
      a browser actually has rather than guessing at a cache. Bump it together
      with the ?v= on the script tags in index.html whenever you deploy —
      `node scripts/stamp.mjs` does both. */
-  version: '2026-09-03.2',
+  version: '2026-09-06.1',
 
   /* ---- Token ---------------------------------------------------------- */
 
   // $INNER on Base — the token people buy, and the one the CA button copies.
-  // Leave empty until the launch address is known.
-  contractAddress: '',
+  contractAddress: '0x11f686b0A97d025Ab8347B7ce52d818E186beb2c',
 
   // $CRCL — the reward token holders receive. Used to price "total
   // distributed" in USD when the rewards source doesn't already give one.
@@ -66,12 +65,13 @@ window.INNER_CONFIG = {
 
   links: {
     // Leave empty and the X button renders disabled rather than dead.
-    x: '',
+    x: 'https://x.com/InnerCrcl_base',
 
     // Leave null to auto-build a DexScreener link from the contract address.
     chart: null,
 
-    launchedIn: 'https://www.thestonks.exchange/',
+    // The token's own page on the launch platform, not the platform's home.
+    launchedIn: 'https://www.thestonks.exchange/token/0x11f686b0A97d025Ab8347B7ce52d818E186beb2c',
     rewardsBy: 'https://www.stockify.finance/',
   },
 
