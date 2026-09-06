@@ -149,14 +149,12 @@
   var address = String(CFG.contractAddress || '').trim();
 
   var copyBtn = document.getElementById('copy-ca');
-  var caHint = document.getElementById('ca-hint');
 
   // The button stays a plain "CA"; the address itself rides along as its
   // tooltip, so a truncated form can never be mistaken for the real thing.
   if (copyBtn) {
     if (address) copyBtn.title = address; else copyBtn.classList.add('is-idle');
   }
-  if (caHint) caHint.textContent = address ? 'Copy CA' : 'Soon';
 
   var chartLink = document.getElementById('link-chart');
   if (chartLink) {
