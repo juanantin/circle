@@ -669,7 +669,7 @@ a { color: inherit; text-decoration: none; }
   transition: filter .18s ease;
 }
 
-.partner__logo--stonks   { height: 34px; }
+.partner__logo--stonks   { height: 44px; }
 .partner__logo--stockify { height: 38px; }
 
 .partner:hover .partner__logo { filter: brightness(1.12); }
@@ -762,7 +762,7 @@ a { color: inherit; text-decoration: none; }
 
   .partner { padding: 15px 14px; gap: 9px; }
   .partner__kicker { font-size: 9.5px; }
-  .partner__logo--stonks   { height: 29px; }
+  .partner__logo--stonks   { height: 36px; }
   .partner__logo--stockify { height: 33px; }
 }
 
