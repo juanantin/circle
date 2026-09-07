@@ -252,9 +252,11 @@ the page falls back to `execCommand` elsewhere.)
 - `images/inner_header.mp4` is **672×448** (3:2), so it is upscaled on a desktop
   retina screen. Re-export larger and drop it in if you want it crisper — the
   layout reads its aspect ratio from CSS, not from the file.
-- The ecosystem marks are drawn as inline SVG rather than shipped as images, so
-  they stay crisp and pick up the page's own palette. Swap in official lockups
-  if either project publishes one for dark backgrounds.
+- The ecosystem blocks use each project's own lockup — `images/stonkex_button.png`
+  and `images/stockify_logo.png` — so no brand name is set in type beside them.
+  They are sized by **height**, not width (`.partner__logo--stonks` /
+  `--stockify`): the two ratios differ enough, 4.9:1 against 3.1:1, that equal
+  widths would leave one looking twice the weight of the other.
 - On mobile the top bar stacks, the fact strip becomes one column, and the
   dashboard drops to two tiles per row with the icon above the label. Tested at
   390px wide with no horizontal overflow.
